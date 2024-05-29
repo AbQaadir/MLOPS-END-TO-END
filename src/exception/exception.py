@@ -1,3 +1,5 @@
+import sys
+
 class CustomExceptionHandler:
     def __init__(self, exception, sys_module):
         self.exception = exception
@@ -19,4 +21,14 @@ class CustomExceptionHandler:
         )
 
 
-# Path: src/exception/my_exception.py
+# Path: src/exception/exception.py
+
+"""
+if __name__ == "__main__":
+    try:
+        raise ValueError("This is a sample exception")
+    except Exception as e:
+        exception_handler = CustomExceptionHandler(exception=e, sys_module=sys)
+        print(exception_handler)
+        
+"""

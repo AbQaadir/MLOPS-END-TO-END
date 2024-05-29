@@ -17,7 +17,6 @@ def create_files(file_paths):
 package_name = "MLOPS"
 
 list_of_files = [
-    ".github/workflows/.gitkeep",
     "src/init.py",
     "src/components/init.py",
     "src/components/data_ingestion.py",
@@ -33,13 +32,8 @@ list_of_files = [
     "src/exception/exception.py",
     "tests/unit/init.py",
     "tests/integration/init.py",
-    "init_setup.sh",
     "requirements.txt",
     "requirements_dev.txt",
-    "setup.py",
-    "setup.cfg",
-    "pyproject.toml",
-    "tox.ini",
     "experiments/experiments.ipynb",
 ]
 

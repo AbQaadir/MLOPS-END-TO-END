@@ -13,6 +13,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OrdinalEncoder, StandardScaler
 
+
 @dataclass
 class DataTransformationConfig:
     preprocessor: object

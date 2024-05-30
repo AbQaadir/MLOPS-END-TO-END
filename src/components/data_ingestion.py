@@ -8,10 +8,12 @@ from dataclasses import dataclass
 from src.logger.logging import logging
 from src.exception.exception import CustomExceptionHandler
 
+
 @dataclass
 class DataIngestionConfig:
     train_data_path: str
     test_data_path: str
+
 
 class DataIngestion:
     def __init__(self, config: DataIngestionConfig):
@@ -41,7 +43,9 @@ class DataIngestion:
     def split_data(self, data: pd.DataFrame) -> None:
         logging.info("Splitting data")
         try:
-            train_data, test_data = train_test_split(data, test_size=0.2, random_state=42)
+            train_data, test_data = train_test_split(
+                data, test_size=0.2, random_state=42
+            )
             self.save_data(train_data, self.config.train_data_path)
             self.save_data(test_data, self.config.test_data_path)
             logging.info("Data split successfully")
@@ -53,7 +57,7 @@ class DataIngestion:
 if __name__ == "__main__":
     config = DataIngestionConfig(
         train_data_path="artifacts/train_data.csv",
-        test_data_path="artifacts/test_data.csv"
+        test_data_path="artifacts/test_data.csv",
     )
     data_ingestion = DataIngestion(config)
     data = data_ingestion.read_data("Data/raw.csv")

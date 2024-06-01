@@ -1,9 +1,10 @@
+import sys
+
+
 class CustomExceptionHandler:
     def __init__(self, exception, sys_module):
         self.exception = exception
-
         _, _, tb = sys_module.exc_info()
-
         self.line_number = tb.tb_lineno
         self.filename = tb.tb_frame.f_code.co_filename
         self.error_message = str(exception)
@@ -19,4 +20,9 @@ class CustomExceptionHandler:
         )
 
 
-# Path: src/exception/my_exception.py
+# if __name__ == "__main__":
+#     try:
+#         raise ValueError("This is a test exception")
+#     except Exception as e:
+#         exception_handler = CustomExceptionHandler(e, sys)
+#         print(exception_handler)

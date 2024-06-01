@@ -4,20 +4,24 @@ import pickle
 import os
 import sys
 
-from src.utils.utils import Utils
-from src.exception.exception import CustomExceptionHandler
-from src.logger.logging import logging
+from src.exception.exception import (
+    CustomExceptionHandler,
+)  # Custom exception handler module
+from src.logger.logging import logging  # Custom logging module
 from dataclasses import dataclass
 
 from xgboost import XGBRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression, Lasso, Ridge, ElasticNet
 from sklearn.model_selection import GridSearchCV
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from src.utils.utils import Utils
 
 
 @dataclass
 class ModelTrainerConfig:
-    model_path: str
+    model_path: str = "artifacts/models"
 
 
 class ModelTrainer:
@@ -27,80 +31,103 @@ class ModelTrainer:
         self.logger = logging.getLogger(__name__)
         self.models = {
             "LinearRegression": LinearRegression(),
-            "Lasso": Lasso(),
-            "Ridge": Ridge(),
-            "Elasticnet": ElasticNet(),
+            "Lasso": Lasso(max_iter=100000),
+            "Ridge": Ridge(max_iter=100000),
+            "Elasticnet": ElasticNet(max_iter=100000),
             "Randomforest": RandomForestRegressor(),
             "xgboost": XGBRegressor(),
         }
         self.param_grid = {
             "Lasso": {"regressor__alpha": [0.1, 1.0, 10.0]},
             "Ridge": {"regressor__alpha": [0.1, 1.0, 10.0]},
-            "Elasticnet": {
+            "ElasticNet": {
                 "regressor__alpha": [0.1, 1.0, 10.0],
                 "regressor__l1_ratio": [0.1, 0.5, 0.9],
             },
-            "Randomforest": {"regressor__n_estimators": [50, 100, 200]},
-            "xgboost": {
-                "regressor__n_estimators": [50, 100, 200],
-                "regressor__max_depth": [3, 5, 7],
+            "RandomForest": {"n_estimators": [50, 100, 200]},
+            "XGBoost": {
+                "n_estimators": [50, 100, 200],
+                "max_depth": [3, 5, 7],
             },
         }
-        self.utils = Utils()
 
-    def train_model(self, model_name, data_path):
+    def load_preprocessor(self):
         try:
-            # load the data
-            logging.info("Loading data")
-            data = self.utils.load_data(data_path)
-            logging.info("Data loaded successfully")
+            preprocessor_path = os.path.join("artifacts", "preprocessor.pkl")
+            with open(preprocessor_path, "rb") as file:
+                preprocessor = pickle.load(file)
+            return preprocessor
+        except Exception as e:
+            self.logger.error(f"An error occurred: {str(e)}")
+            self.exception_handler(e, sys)
 
-            # split the data
-            logging.info("Splitting data")
-            X_train, y_train = self.utils.data_split(data)
+    # save the model in the model_path directory
+    def save_model(self, model, model_path):
+        try:
+            with open(model_path, "wb") as file:
+                pickle.dump(model, file)
+        except Exception as e:
+            self.logger.error(f"An error occurred: {str(e)}")
+            self.exception_handler(e, sys)
+
+    # train the model using the train_data
+    def train_model(self, model_name, train_data):
+        try:
+            # Split the data into X and y
+            logging.info("Splitting the data into X and y")
+            X_train = train_data.drop("price", axis=1)
+            y_train = train_data["price"]
             logging.info("Data split successfully")
 
-            # load the model
-            logging.info(f"Training {model_name} model")
+            # Load the model
+            self.logger.info(f"Training {model_name} model")
             model = self.models[model_name]
-            logging.info(f"Model {model_name} loaded successfully")
+            self.logger.info(f"Model {model_name} loaded successfully")
 
-            # load the preprocessor
-            logging.info("Loading preprocessor")
-            preprocessor_path = os.path.join("artifacts", "preprocessor.pkl")
-            preprocessor = self.utils.load_preprocessor(preprocessor_path)
-            logging.info("Preprocessor loaded successfully")
+            # Load the preprocessor
+            self.logger.info("Loading preprocessor")
+            preprocessor = self.load_preprocessor()
+            self.logger.info("Preprocessor loaded successfully")
 
-            # make a model pipeline
-            logging.info("Making model pipeline")
-            model_pipeline = self.utils.make_pipeline(preprocessor = preprocessor, model = model)
-            logging.info("Model pipeline created successfully")
+            # Create a pipeline
+            self.logger.info("Creating pipeline")
+            pipeline = Pipeline(
+                steps=[
+                    ("preprocessor", preprocessor),
+                    ("regressor", model),
+                ]
+            )
+            self.logger.info("Pipeline created successfully")
 
-            # hyperparameter tuning
-            logging.info("Hyperparameter tuning")
-            param_grid = self.param_grid[model_name]
-            grid_search = GridSearchCV(model_pipeline, param_grid, cv=5, n_jobs=-1)
+            # Perform grid search
+            self.logger.info("Performing grid search")
+            grid_search = GridSearchCV(
+                pipeline, self.param_grid[model_name], cv=5, n_jobs=-1
+            )
+            self.logger.info("Grid search completed successfully")
+
+            # Fit the model
+            self.logger.info("Fitting the model")
             grid_search.fit(X_train, y_train)
-            logging.info("Hyperparameter tuning completed")
+            self.logger.info("Model fitted successfully")
 
-            # save the model
-            logging.info("Saving model")
-            model_path = os.path.join("artifacts/models", f"{model_name}.pkl")
-            self.utils.save_model(grid_search.best_estimator_, model_path)
-            logging.info(f"Model saved at {model_path}")
+            # Save the model
+            self.logger.info("Saving the model")
+            model_path = os.path.join(self.config.model_path, f"{model_name}.pkl")
+            self.save_model(grid_search, model_path)
+            self.logger.info("Model saved successfully")
 
-            return grid_search.best_estimator_
+            return grid_search
 
         except Exception as e:
-            logging.error(f"An error occurred: {str(e)}")
+            self.logger.error(f"An error occurred: {str(e)}")
             self.exception_handler(e, sys)
 
 
-if __name__ == "__main__":
-    config = ModelTrainerConfig(model_path="artifacts/models")
-    model_trainer = ModelTrainer(config)
-    score = model_trainer.train_model("Lasso", "artifacts/train_data.csv")
-    print(" ================ ")
-    print(score)
+# if __name__ == "__main__":
+# model_trainer_config = ModelTrainerConfig()
+# model_trainer = ModelTrainer(model_trainer_config)
+# train_data = pd.read_csv("data/train_data.csv")
+# model_trainer.train_model("Lasso", train_data)
 
-# Path: src/components/model_trainer.py
+# path: src/components/model_trainer.py

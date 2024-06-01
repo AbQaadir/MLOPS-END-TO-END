@@ -11,8 +11,9 @@ from src.exception.exception import CustomExceptionHandler
 
 @dataclass
 class DataIngestionConfig:
-    train_data_path: str
-    test_data_path: str
+    raw_data_path: str = "artifacts/raw.csv"
+    train_data_path: str = "artifacts/train_data.csv"
+    test_data_path: str = "artifacts/test_data.csv"
 
 
 class DataIngestion:
@@ -26,11 +27,16 @@ class DataIngestion:
         try:
             data = pd.read_csv(data_path, low_memory=False)
             logging.info("Data read successfully")
+
+            # save the raw data
+            self.save_data(data, self.config.raw_data_path)
+
             return data
         except Exception as e:
             self.logger.error(self.exception_handler(e, sys))
             raise  # re-raise the exception
 
+    # save the raw data as a csv file in the artifacts folder
     def save_data(self, data: pd.DataFrame, file_path: str) -> None:
         logging.info("Saving data")
         try:
@@ -43,22 +49,46 @@ class DataIngestion:
     def split_data(self, data: pd.DataFrame) -> None:
         logging.info("Splitting data")
         try:
+
+            logging.info("Splitting data into train and test sets")
             train_data, test_data = train_test_split(
                 data, test_size=0.2, random_state=42
             )
+            logging.info("Data split successfully")
+
+            # save the train and test data
             self.save_data(train_data, self.config.train_data_path)
             self.save_data(test_data, self.config.test_data_path)
-            logging.info("Data split successfully")
+
+            return train_data, test_data
         except Exception as e:
             self.logger.error(self.exception_handler(e, sys))
             raise  # re-raise the exception
 
+    def execute(self) -> None:
+        logging.info("Executing data ingestion")
+        try:
+            logging.info("Reading raw data")
+            raw_data = self.read_data("Data/raw.csv")
+            logging.info("Raw data read successfully")
+
+            logging.info("Splitting data")
+            train_data, test_data = self.split_data(raw_data)
+            logging.info("Data split successfully")
+
+            return train_data, test_data
+        except Exception as e:
+            self.logger.error(self.exception_handler(e, sys))
+            raise
+
 
 if __name__ == "__main__":
-    config = DataIngestionConfig(
-        train_data_path="artifacts/train_data.csv",
-        test_data_path="artifacts/test_data.csv",
-    )
+    config = DataIngestionConfig()
     data_ingestion = DataIngestion(config)
-    data = data_ingestion.read_data("Data/raw.csv")
-    data_ingestion.split_data(data)
+    train_data, test_data = data_ingestion.execute()
+
+    print(train_data.head())
+    print(test_data.head())
+
+
+# Path src/components/data_ingestion.py

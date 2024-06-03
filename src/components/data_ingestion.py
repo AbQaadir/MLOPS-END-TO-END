@@ -12,8 +12,8 @@ from src.exception.exception import CustomExceptionHandler
 @dataclass
 class DataIngestionConfig:
     raw_data_path: str = "artifacts/raw.csv"
-    train_data_path: str = "artifacts/train_data.csv"
-    test_data_path: str = "artifacts/test_data.csv"
+    train_data_path: str = "artifacts/train.csv"
+    test_data_path: str = "artifacts/test.csv"
 
 
 class DataIngestion:
@@ -60,7 +60,7 @@ class DataIngestion:
             self.save_data(train_data, self.config.train_data_path)
             self.save_data(test_data, self.config.test_data_path)
 
-            return train_data, test_data
+            return self.config.train_data_path, self.config.test_data_path
         except Exception as e:
             self.logger.error(self.exception_handler(e, sys))
             raise  # re-raise the exception
@@ -73,22 +73,20 @@ class DataIngestion:
             logging.info("Raw data read successfully")
 
             logging.info("Splitting data")
-            train_data, test_data = self.split_data(raw_data)
+            train_data_path, test_data_path = self.split_data(raw_data)
             logging.info("Data split successfully")
 
-            return train_data, test_data
+            return train_data_path, test_data_path
+
         except Exception as e:
             self.logger.error(self.exception_handler(e, sys))
             raise
 
 
-if __name__ == "__main__":
-    config = DataIngestionConfig()
-    data_ingestion = DataIngestion(config)
-    train_data, test_data = data_ingestion.execute()
-
-    print(train_data.head())
-    print(test_data.head())
-
+# if __name__ == "__main__":
+#     config = DataIngestionConfig()
+#     data_ingestion = DataIngestion(config)
+#     train_data_path, test_data_path = data_ingestion.execute()
+#     print(train_data_path, test_data_path)
 
 # Path src/components/data_ingestion.py

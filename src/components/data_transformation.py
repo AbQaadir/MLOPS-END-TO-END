@@ -12,13 +12,14 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OrdinalEncoder, StandardScaler
-from src.utils.utils import Utils
 
 
 @dataclass
 class DataTransformationConfig:
-    transformed_X_train_data_path: str = "artifacts/transformed_data/X_train.csv"
-    transformed_y_train_data_path: str = "artifacts/transformed_data/y_train.csv"
+    transformed_X_train_data_path: str = "artifacts/transformed/X_train.csv"
+    transformed_y_train_data_path: str = "artifacts/transformed/y_train.csv"
+    transformed_X_test_data_path: str = "artifacts/transformed/X_test.csv"
+    transformed_y_test_data_path: str = "artifacts/transformed/y_test.csv"
     preprocessor_path: str = "artifacts/preprocessor.pkl"
 
 
@@ -87,45 +88,46 @@ class DataTransformation:
             self.logger.error(self.exception_handler(e, sys))
             raise  # re-raise the exception
 
-    def transform_data(self, data: pd.DataFrame) -> tuple:
-        logging.info("Transforming data")
+    def transform_data(self, train_data_path: str, test_data_path: str):
+        train_df = pd.read_csv(train_data_path)
+        test_df = pd.read_csv(test_data_path)
+
+        X_train = train_df.drop(columns=["id", "price"])
+        y_train = train_df["price"]
+
+        X_test = test_df.drop(columns=["id", "price"])
+        y_test = test_df["price"]
+
+        preprocessor = self._get_preprocessor()
+
+        logging.info("Fitting preprocessor")
+
         try:
+            logging.info("Fitting preprocessor")
+            transormed_X_train = preprocessor.fit_transform(X_train)
+            transformed_X_test = preprocessor.transform(X_test)
+            logging.info("Preprocessor fitted successfully")
 
-            logging.info("Getting preprocessor")
-            preprocessor = self._get_preprocessor()
-            logging.info("Preprocessor obtained successfully")
-
-            logging.info("Transforming data")
-            X = data.drop(columns=["id", "price"])
-            y = data["price"]
-
-            X_transformed = preprocessor.fit_transform(X)
-            logging.info("Data transformed successfully")
-
-            # save the preprocessor
+            logging.info("Saving preprocessor")
             self.save_preprocessor(preprocessor, self.config.preprocessor_path)
-            columns = self.numerical_columns + self.categorical_columns
+            logging.info("Preprocessor saved successfully")
+            
+            
+            train_arr = np.c_[transormed_X_train, np.array(y_train)]
+            test_arr = np.c_[transformed_X_test, np.array(y_test)]
+            
+            return train_arr, test_arr
 
-            # return the transformed data as dataframe
-            X_transformed = pd.DataFrame(X_transformed, columns=columns)
-            y = pd.DataFrame(y, columns=["price"])
-
-            # save the transformed data as csv files
-            X_transformed.to_csv(self.config.transformed_X_train_data_path, index=False)
-            y.to_csv(self.config.transformed_y_train_data_path, index=False)
-
-            return X_transformed, y
         except Exception as e:
             self.logger.error(self.exception_handler(e, sys))
             raise  # re-raise the exception
 
 
-if __name__ == "__main__":
-    config = DataTransformationConfig()
-    data_transformation = DataTransformation(config)
-    X_train, y_train = data_transformation.transform_data(pd.read_csv("Data/raw.csv"))
-    print(X_train.head())
-    print(y_train.head())
-
+# if __name__ == "__main__":
+#     config = DataTransformationConfig()
+#     data_transformation = DataTransformation(config)
+#     train_data_path = "artifacts/train.csv"
+#     test_data_path = "artifacts/test.csv"
+#     train_arr, test_arr = data_transformation.transform_data(train_data_path, test_data_path)
 
 # Path: src/components/data_transformation.py

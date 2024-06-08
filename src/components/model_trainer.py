@@ -79,15 +79,15 @@ class ModelTrainer:
     # train all the model and save the best model
     def train_model(
         self,
-        train_arr : np.ndarray,
-        test_arr : np.ndarray,
+        train_arr: np.ndarray,
+        test_arr: np.ndarray,
     ):
         # Split the data into features and target
         X_train = train_arr[:, :-1]
         y_train = train_arr[:, -1]
         X_test = test_arr[:, :-1]
         y_test = test_arr[:, -1]
-        
+
         # Train all the models and save the best model
         best_model = None
         best_score = -np.inf
@@ -134,7 +134,6 @@ class ModelTrainer:
             logging.error("No model was successfully trained")
 
         logging.info("Model training completed successfully")
-        
 
 
 # if __name__ == "__main__":

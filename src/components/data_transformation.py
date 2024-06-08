@@ -111,11 +111,10 @@ class DataTransformation:
             logging.info("Saving preprocessor")
             self.save_preprocessor(preprocessor, self.config.preprocessor_path)
             logging.info("Preprocessor saved successfully")
-            
-            
+
             train_arr = np.c_[transormed_X_train, np.array(y_train)]
             test_arr = np.c_[transformed_X_test, np.array(y_test)]
-            
+
             return train_arr, test_arr
 
         except Exception as e:
